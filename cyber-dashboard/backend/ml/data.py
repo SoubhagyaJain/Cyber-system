@@ -91,13 +91,23 @@ def _fetch_from_laptop(sample_size: int):
         return None
 
 
+# ── Global Cache to prevent re-downloading during sequential training ──
+_cached_df = None
+_cached_sample_size = None
+
 def load_data(data_dir=None, sample_size=100000):
+    global _cached_df, _cached_sample_size
     """
     Data loading priority:
       1. Local CSV files on the server filesystem  (dev / if files are present)
       2. Laptop data server via DATA_SOURCE_URL    (cloud training on large datasets)
       3. Synthetic data                             (fallback / demo)
     """
+    if _cached_df is not None and _cached_sample_size == sample_size:
+        print(f"[data] Using cached dataframe ({sample_size:,} rows)")
+        return _cached_df.copy()
+
+
     import pathlib
 
     # ── 1. Local CSV files ────────────────────────────────────────────────
@@ -118,18 +128,26 @@ def load_data(data_dir=None, sample_size=100000):
         if dfs:
             full = pd.concat(dfs, ignore_index=True).drop_duplicates()
             print(f"[data] Loaded {len(full):,} rows from local CSV files.")
+            _cached_df = full
+            _cached_sample_size = sample_size
             return full
 
     # ── 2. Laptop data server ─────────────────────────────────────────────
     if os.environ.get("DATA_SOURCE_URL"):
         df = _fetch_from_laptop(sample_size)
         if df is not None and not df.empty:
+            _cached_df = df
+            _cached_sample_size = sample_size
             return df
         print("[data] Laptop server unavailable — falling back to synthetic data.")
 
     # ── 3. Synthetic fallback ─────────────────────────────────────────────
     print(f"[data] Using synthetic data ({sample_size:,} samples).")
-    return generate_synthetic_data(sample_size)
+    synth_df = generate_synthetic_data(sample_size)
+    _cached_df = synth_df
+    _cached_sample_size = sample_size
+    return synth_df
+
 
 
 def preprocess_data(df):
