@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 
 const DEFAULT_SEVERITIES = [
@@ -9,8 +8,11 @@ const DEFAULT_SEVERITIES = [
     { label: 'Low', color: '#22C55E' },
 ];
 
-// Map backend attack types to severity levels
-function mapAttackTypesToSeverity(attackCounts, classes) {
+// Zero rings shown when simulation has not started
+const ZERO_SEVERITIES = DEFAULT_SEVERITIES.map(s => ({ ...s, value: 0, total: 100 }));
+
+// Map backend attack_type_counts to severity buckets
+function mapAttackTypesToSeverity(attackCounts) {
     const getSeverity = (label) => {
         const l = label.toLowerCase();
         if (l.includes('normal')) return 'Low';
@@ -21,29 +23,19 @@ function mapAttackTypesToSeverity(attackCounts, classes) {
     };
 
     const sevCounts = { Exploited: 0, Critical: 0, High: 0, Medium: 0, Low: 0 };
-
     for (const [label, count] of Object.entries(attackCounts)) {
-        const sev = getSeverity(label);
-        sevCounts[sev] += count;
+        sevCounts[getSeverity(label)] += count;
     }
 
+    const total = Math.max(1, Object.values(sevCounts).reduce((a, b) => a + b, 0));
     return DEFAULT_SEVERITIES.map(s => ({
         ...s,
         value: sevCounts[s.label] || 0,
-        total: Math.max(1, Object.values(attackCounts).reduce((a, b) => a + b, 0)),
+        total,
     }));
 }
 
-// Zero state shown immediately after reset / before first simulation
-const fallbackInit = [
-    { label: 'Exploited', value: 0, total: 100, color: '#EF4444' },
-    { label: 'Critical', value: 0, total: 100, color: '#DC2626' },
-    { label: 'High', value: 0, total: 200, color: '#F97316' },
-    { label: 'Medium', value: 0, total: 500, color: '#F59E0B' },
-    { label: 'Low', value: 0, total: 1500, color: '#22C55E' },
-];
-
-function RadialRing({ label, value, total, color, delta }) {
+function RadialRing({ label, value, total, color, simActive }) {
     const size = 110;
     const strokeWidth = 8;
     const radius = (size - strokeWidth) / 2;
@@ -63,9 +55,10 @@ function RadialRing({ label, value, total, color, delta }) {
                     </defs>
                     <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={strokeWidth} />
                     <circle cx={size / 2} cy={size / 2} r={radius} fill="none"
-                        stroke={color} strokeWidth={strokeWidth} strokeLinecap="round"
+                        stroke={simActive ? color : 'rgba(255,255,255,0.04)'}
+                        strokeWidth={strokeWidth} strokeLinecap="round"
                         strokeDasharray={circumference} strokeDashoffset={dashOffset}
-                        filter={`url(#glow-${label})`}
+                        filter={simActive ? `url(#glow-${label})` : undefined}
                         style={{ transition: 'stroke-dashoffset 1s ease-out' }}
                     />
                 </svg>
@@ -73,66 +66,24 @@ function RadialRing({ label, value, total, color, delta }) {
                     position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
                     textAlign: 'center',
                 }}>
-                    <div style={{ fontSize: '22px', fontWeight: 800, color: '#F9FAFB', letterSpacing: '-0.03em' }}>
+                    <div style={{ fontSize: '22px', fontWeight: 800, color: simActive ? '#F9FAFB' : '#374151', letterSpacing: '-0.03em' }}>
                         {value.toLocaleString()}
                     </div>
                 </div>
             </div>
-            <span style={{ fontSize: '12px', color: '#9CA3AF', fontWeight: 500 }}>{label}</span>
-            {delta !== 0 && delta !== undefined && (
-                <motion.span
-                    key={value}
-                    initial={{ opacity: 0, y: -4 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    style={{
-                        fontSize: '10px', fontWeight: 600,
-                        color: delta > 0 ? '#EF4444' : '#22C55E',
-                    }}
-                >
-                    {delta > 0 ? `+${delta}` : delta}
-                </motion.span>
-            )}
+            <span style={{ fontSize: '12px', color: simActive ? '#9CA3AF' : '#4B5563', fontWeight: 500 }}>{label}</span>
         </div>
     );
 }
 
 export default function ThreatSeverity({ dashData }) {
-    const [fallback, setFallback] = useState(fallbackInit);
-    const [prevFallback, setPrevFallback] = useState(fallbackInit);
-
     const simActive = dashData?.simulation_active || false;
     const attackCounts = dashData?.attack_type_counts || {};
 
-    // Reset to zeros when simulation stops; oscillate only after a 30s idle delay
-    useEffect(() => {
-        if (simActive) return;
-        // Snap to zero immediately on reset
-        setFallback(fallbackInit);
-        setPrevFallback(fallbackInit);
-        // After 30s idle, start gentle oscillation so the dashboard looks live
-        const timer = setTimeout(() => {
-            const interval = setInterval(() => {
-                setFallback(prev => {
-                    setPrevFallback(prev);
-                    return prev.map(s => {
-                        let delta;
-                        if (s.label === 'Exploited') delta = Math.floor(Math.random() * 5) - 1;
-                        else if (s.label === 'Critical') delta = Math.floor(Math.random() * 8) - 2;
-                        else if (s.label === 'High') delta = Math.floor(Math.random() * 12) - 3;
-                        else if (s.label === 'Medium') delta = Math.floor(Math.random() * 20) - 5;
-                        else delta = Math.floor(Math.random() * 30) - 8;
-                        return { ...s, value: Math.max(0, s.value + delta) };
-                    });
-                });
-            }, 5000);
-            return () => clearInterval(interval);
-        }, 30000);
-        return () => clearTimeout(timer);
-    }, [simActive]);
-
+    // Only show real data when simulation is active; zeros otherwise
     const displaySeverities = simActive
-        ? mapAttackTypesToSeverity(attackCounts, dashData?.classes || [])
-        : fallback;
+        ? mapAttackTypesToSeverity(attackCounts)
+        : ZERO_SEVERITIES;
 
     return (
         <motion.div
@@ -154,24 +105,26 @@ export default function ThreatSeverity({ dashData }) {
                         {simActive ? 'Attack Classification' : 'Threat Exposure Severity'}
                     </h3>
                     <p style={{ fontSize: '12px', color: '#6B7280', marginTop: '2px' }}>
-                        {simActive ? 'Live attack types from ML detection' : 'Vulnerability distribution by severity class'}
+                        {simActive
+                            ? 'Live attack types from ML detection'
+                            : 'Start simulation to see severity breakdown'}
                     </p>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <div className="animate-pulse-glow" style={{
                         width: 6, height: 6, borderRadius: '50%',
-                        background: simActive ? '#22C55E' : '#F59E0B',
-                        boxShadow: `0 0 6px ${simActive ? 'rgba(34,197,94,0.6)' : 'rgba(245,158,11,0.6)'}`,
+                        background: simActive ? '#22C55E' : '#4B5563',
+                        boxShadow: simActive ? '0 0 6px rgba(34,197,94,0.6)' : 'none',
                     }} />
                     <span style={{ fontSize: '11px', color: '#4B5563' }}>
-                        {simActive ? 'Simulation' : 'Live · 5s'}
+                        {simActive ? 'Live' : 'Idle'}
                     </span>
                 </div>
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'space-around', flexWrap: 'wrap', gap: '16px', marginTop: '16px' }}>
-                {displaySeverities.map((s, i) => (
-                    <RadialRing key={s.label} {...s} delta={simActive ? undefined : (fallback[i]?.value - prevFallback[i]?.value)} />
+                {displaySeverities.map((s) => (
+                    <RadialRing key={s.label} {...s} simActive={simActive} />
                 ))}
             </div>
         </motion.div>

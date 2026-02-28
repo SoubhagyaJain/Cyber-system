@@ -55,9 +55,52 @@ def generate_synthetic_data(n_samples=10000):
     return df
 
 
+def _fetch_from_laptop(sample_size: int):
+    """
+    Pull dataset rows from the laptop data server.
+    Requires env vars:
+      DATA_SOURCE_URL  — ngrok / public URL of data_server.py running on your laptop
+      DATA_SECRET      — secret token matching the server's DATA_SECRET
+    Returns a DataFrame or None.
+    """
+    import urllib.request
+    import io
+
+    url = os.environ.get("DATA_SOURCE_URL", "").rstrip("/")
+    secret = os.environ.get("DATA_SECRET", "cybersentinel-local-2024")
+
+    if not url:
+        return None
+
+    endpoint = f"{url}/data?sample_size={sample_size}"
+    print(f"[data] Fetching {sample_size:,} rows from laptop server: {url}")
+
+    req = urllib.request.Request(endpoint, headers={"Authorization": f"Bearer {secret}"})
+    try:
+        with urllib.request.urlopen(req, timeout=300) as resp:
+            if resp.status != 200:
+                print(f"[data] Laptop server returned HTTP {resp.status}")
+                return None
+            row_count = resp.getheader("X-Row-Count", "?")
+            csv_bytes = resp.read()
+            print(f"[data] ✓ Received {row_count} rows ({len(csv_bytes):,} bytes) from laptop")
+            df = pd.read_csv(io.BytesIO(csv_bytes))
+            return df
+    except Exception as e:
+        print(f"[data] ✗ Could not reach laptop server: {e}")
+        return None
+
+
 def load_data(data_dir=None, sample_size=100000):
-    """Try to load real CSVs; fall back to synthetic data."""
+    """
+    Data loading priority:
+      1. Local CSV files on the server filesystem  (dev / if files are present)
+      2. Laptop data server via DATA_SOURCE_URL    (cloud training on large datasets)
+      3. Synthetic data                             (fallback / demo)
+    """
     import pathlib
+
+    # ── 1. Local CSV files ────────────────────────────────────────────────
     if data_dir:
         data_path = pathlib.Path(data_dir)
         files = ['dataset-part1.csv', 'dataset-part2.csv', 'dataset-part3.csv', 'dataset-part4.csv']
@@ -74,8 +117,18 @@ def load_data(data_dir=None, sample_size=100000):
                     pass
         if dfs:
             full = pd.concat(dfs, ignore_index=True).drop_duplicates()
+            print(f"[data] Loaded {len(full):,} rows from local CSV files.")
             return full
 
+    # ── 2. Laptop data server ─────────────────────────────────────────────
+    if os.environ.get("DATA_SOURCE_URL"):
+        df = _fetch_from_laptop(sample_size)
+        if df is not None and not df.empty:
+            return df
+        print("[data] Laptop server unavailable — falling back to synthetic data.")
+
+    # ── 3. Synthetic fallback ─────────────────────────────────────────────
+    print(f"[data] Using synthetic data ({sample_size:,} samples).")
     return generate_synthetic_data(sample_size)
 
 

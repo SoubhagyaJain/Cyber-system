@@ -1,39 +1,37 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 
+// Map backend threat_level string → a stable gauge percentage
+function threatLevelToPercent(level) {
+    switch ((level || '').toUpperCase()) {
+        case 'HIGH': return 85;
+        case 'MODERATE': return 52;
+        case 'LOW':
+        default: return 15;
+    }
+}
+
 export default function DarkWebGauge({ dashData }) {
-    const [fallbackValue, setFallbackValue] = useState(0);
     const [progress, setProgress] = useState(0);
 
+    // Only use real simulation data — no idle oscillation
     const simActive = dashData?.simulation_active || false;
-    const targetValue = simActive
-        ? Math.min(95, Math.max(5, Math.round(dashData.attack_rate * 2.5)))
-        : fallbackValue;
 
-    // Reset to zero when simulation stops; oscillate only after a delay
+    // When simulation is active derive value from threat_level; otherwise lock to 0
+    const targetValue = simActive
+        ? threatLevelToPercent(dashData?.threat_level)
+        : 0;
+
+    // Reset to zero immediately when simulation stops
     useEffect(() => {
-        if (simActive) {
-            // Simulation just started — reset fallback so gauge reads real data
-            return;
+        if (!simActive) {
+            setProgress(0);
         }
-        // Immediately snap to 0 on reset
-        setFallbackValue(0);
-        // Start oscillating only after 30s of idle (so page-load looks live but reset looks clean)
-        const timer = setTimeout(() => {
-            const interval = setInterval(() => {
-                setFallbackValue(prev => {
-                    const delta = Math.floor(Math.random() * 10) - 4;
-                    return Math.max(20, Math.min(95, prev + delta));
-                });
-            }, 4000);
-            // Store cleanup in a ref-like closure
-            return () => clearInterval(interval);
-        }, 30000);
-        return () => clearTimeout(timer);
     }, [simActive]);
 
-    // Animate progress toward target
+    // Animate progress toward target (only when simulating)
     useEffect(() => {
+        if (!simActive && targetValue === 0) return; // skip animation when idle
         const raf = { id: null };
         const start = progress;
         const startTime = performance.now();
@@ -47,7 +45,7 @@ export default function DarkWebGauge({ dashData }) {
         };
         raf.id = requestAnimationFrame(animate);
         return () => cancelAnimationFrame(raf.id);
-    }, [targetValue]);
+    }, [targetValue]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // SVG arc
     const size = 260;
@@ -75,10 +73,11 @@ export default function DarkWebGauge({ dashData }) {
     const needleTip = polarToCartesian(needleAngle);
 
     const riskColor = progress > 70 ? '#EF4444' : progress > 40 ? '#F59E0B' : '#22C55E';
-    const riskLabel = progress > 70 ? 'HIGH RISK' : progress > 40 ? 'MODERATE' : 'LOW RISK';
 
-    // Use backend threat level when sim active
-    const displayLabel = simActive ? (dashData.threat_level || 'LOW') : riskLabel;
+    // Readable label — driven entirely by backend threat_level when active
+    const displayLabel = simActive
+        ? ((dashData?.threat_level || 'LOW') + ' RISK')
+        : 'AWAITING SIMULATION';
 
     return (
         <motion.div
@@ -101,16 +100,16 @@ export default function DarkWebGauge({ dashData }) {
                         {simActive ? 'Threat Level' : 'Dark Web Risk Level'}
                     </h3>
                     <p style={{ fontSize: '12px', color: '#6B7280', marginTop: '2px' }}>
-                        {simActive ? 'Based on live simulation attack rate' : 'Exposure score based on leaked credentials'}
+                        {simActive ? 'Based on live simulation attack rate' : 'Start simulation to measure exposure'}
                     </p>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <div className="animate-pulse-glow" style={{
                         width: 6, height: 6, borderRadius: '50%',
-                        background: simActive ? '#22C55E' : riskColor,
-                        boxShadow: `0 0 6px ${simActive ? 'rgba(34,197,94,0.6)' : riskColor + '90'}`,
+                        background: simActive ? '#22C55E' : '#4B5563',
+                        boxShadow: simActive ? '0 0 6px rgba(34,197,94,0.6)' : 'none',
                     }} />
-                    <span style={{ fontSize: '11px', color: '#4B5563' }}>{simActive ? 'Simulation' : 'Live'}</span>
+                    <span style={{ fontSize: '11px', color: '#4B5563' }}>{simActive ? 'Live' : 'Idle'}</span>
                 </div>
             </div>
 
@@ -127,18 +126,21 @@ export default function DarkWebGauge({ dashData }) {
                     </linearGradient>
                 </defs>
                 <path d={bgPath} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={strokeWidth} strokeLinecap="round" />
-                <path d={bgPath} fill="none" stroke="url(#gauge-gradient)" strokeWidth={strokeWidth} strokeLinecap="round"
-                    strokeDasharray={circumference} strokeDashoffset={dashOffset} filter="url(#glow-gauge)"
+                <path d={bgPath} fill="none"
+                    stroke={simActive ? 'url(#gauge-gradient)' : 'rgba(255,255,255,0.04)'}
+                    strokeWidth={strokeWidth} strokeLinecap="round"
+                    strokeDasharray={circumference} strokeDashoffset={dashOffset}
+                    filter={simActive ? 'url(#glow-gauge)' : undefined}
                     style={{ transition: 'stroke-dashoffset 0.5s ease-out' }} />
                 <line x1={cx} y1={cy} x2={needleTip.x} y2={needleTip.y}
                     stroke="rgba(255,255,255,0.7)" strokeWidth="2" strokeLinecap="round"
                     style={{ transition: 'all 0.5s ease-out' }} />
-                <circle cx={cx} cy={cy} r="6" fill={riskColor} style={{ transition: 'fill 0.5s' }} />
+                <circle cx={cx} cy={cy} r="6" fill={simActive ? riskColor : '#374151'} style={{ transition: 'fill 0.5s' }} />
                 <circle cx={cx} cy={cy} r="3" fill="#0B0F14" />
-                <text x={cx} y={cy - 30} textAnchor="middle" fill="#F9FAFB" fontSize="42" fontWeight="800" fontFamily="Inter" letterSpacing="-2">
+                <text x={cx} y={cy - 30} textAnchor="middle" fill={simActive ? '#F9FAFB' : '#374151'} fontSize="42" fontWeight="800" fontFamily="Inter" letterSpacing="-2">
                     {progress}%
                 </text>
-                <text x={cx} y={cy - 8} textAnchor="middle" fill={riskColor} fontSize="12" fontWeight="600" fontFamily="Inter"
+                <text x={cx} y={cy - 8} textAnchor="middle" fill={simActive ? riskColor : '#4B5563'} fontSize="12" fontWeight="600" fontFamily="Inter"
                     style={{ transition: 'fill 0.5s' }}>
                     {displayLabel}
                 </text>
@@ -151,8 +153,8 @@ export default function DarkWebGauge({ dashData }) {
                     { label: 'High', color: '#EF4444' },
                 ].map((l) => (
                     <div key={l.label} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <div style={{ width: 8, height: 8, borderRadius: '50%', background: l.color }} />
-                        <span style={{ fontSize: '11px', color: '#9CA3AF' }}>{l.label}</span>
+                        <div style={{ width: 8, height: 8, borderRadius: '50%', background: simActive ? l.color : '#374151' }} />
+                        <span style={{ fontSize: '11px', color: simActive ? '#9CA3AF' : '#4B5563' }}>{l.label}</span>
                     </div>
                 ))}
             </div>
