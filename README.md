@@ -17,6 +17,12 @@
 
 ---
 
+## 🌐 Live Demo (No Setup)
+
+✅ **React Dashboard (Vercel):** https://cyber-sentinel-ai-ten.vercel.app/
+
+> ⚠️ The **localhost links below only work after you run the project locally** using Docker.
+
 ## Why This Exists
 
 Enterprise SOCs face three recurring failures:
