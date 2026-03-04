@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+
+# Build output (built inside container)
+dist/
+
+# Backend (separate service)
+backend/
+
+# Env files (injected via ARG / compose)
+.env
+.env.*
+!.env.example
+
+# IDE
+.vscode/
+.idea/
+
+# Git
+.git/
+.gitignore
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docs
+README.md
+*.md

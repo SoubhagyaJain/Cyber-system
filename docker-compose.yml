@@ -1,0 +1,74 @@
+# ============================================================================
+# CyberSentinel AI Dashboard — Production Docker Compose
+# Run: docker compose up --build
+# ============================================================================
+
+services:
+  # ── FastAPI Backend (ML Inference) ─────────────────────────────────────────
+  backend:
+    build:
+      context: ./cyber-dashboard/backend
+      dockerfile: Dockerfile
+    container_name: cybersentinel-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - OMP_NUM_THREADS=1
+      - OPENBLAS_NUM_THREADS=1
+      - MKL_NUM_THREADS=1
+      - NUMEXPR_NUM_THREADS=1
+      - PYTHONUNBUFFERED=1
+    healthcheck:
+      test: [ "CMD", "curl", "--fail", "http://localhost:8000/api/health" ]
+      interval: 30s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
+    networks:
+      - cybersentinel
+
+  # ── React Frontend (Nginx) ────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./cyber-dashboard
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE: "" # Empty = nginx reverse-proxies /api/* to backend
+    container_name: cybersentinel-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:80/" ]
+      interval: 30s
+      timeout: 5s
+      start_period: 5s
+      retries: 3
+    networks:
+      - cybersentinel
+
+  # ── Streamlit Dashboard ───────────────────────────────────────────────────
+  streamlit:
+    build:
+      context: ./IntrusionDetectionDashboard
+      dockerfile: Dockerfile
+    container_name: cybersentinel-streamlit
+    restart: unless-stopped
+    ports:
+      - "8501:8501"
+    healthcheck:
+      test: [ "CMD", "curl", "--fail", "http://localhost:8501/_stcore/health" ]
+      interval: 30s
+      timeout: 5s
+      start_period: 15s
+      retries: 3
+    networks:
+      - cybersentinel
+
+networks:
+  cybersentinel:
+    driver: bridge

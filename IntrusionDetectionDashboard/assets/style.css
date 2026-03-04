@@ -1,0 +1,204 @@
+/* Global SOC Theme */
+@import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;700&family=Inter:wght@400;600;800&family=Rajdhani:wght@500;600;700&display=swap');
+
+body,
+.stApp {
+    background-color: #0E1117;
+    color: #E6EDF3;
+    font-family: 'Inter', sans-serif;
+}
+
+/* Typography */
+h1,
+h2,
+h3,
+h4,
+h5 {
+    font-family: 'Rajdhani', sans-serif !important;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+h1 {
+    background: linear-gradient(90deg, #FFFFFF, #8B949E);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-weight: 800;
+}
+
+h3 {
+    color: #00FF9F !important;
+    border-left: 3px solid #00FF9F;
+    padding-left: 10px;
+}
+
+/* Metric Cards - The "SOC" Look */
+div[data-testid="metric-container"] {
+    background-color: #161B22;
+    border: 1px solid #30363D;
+    padding: 15px 20px;
+    border-radius: 6px;
+    /* Slightly sharper */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.5);
+    transition: all 0.2s ease-in-out;
+}
+
+div[data-testid="metric-container"]:hover {
+    border-color: #00FF9F;
+    box-shadow: 0 0 15px rgba(0, 255, 159, 0.1);
+    transform: translateY(-2px);
+}
+
+label[data-testid="stMetricLabel"] {
+    color: #8B949E !important;
+    font-size: 0.8rem !important;
+    font-weight: 600 !important;
+    letter-spacing: 1px;
+}
+
+div[data-testid="stMetricValue"] {
+    color: #E6EDF3 !important;
+    font-family: 'Roboto Mono', monospace;
+    font-size: 24px !important;
+}
+
+div[data-testid="stMetricDelta"] svg {
+    color: #00FF9F !important;
+    /* Force green/red depending on value? ST handles this mostly */
+}
+
+/* Custom Status Bar Container */
+.status-bar-container {
+    display: flex;
+    justify-content: space-between;
+    background-color: #0D1117;
+    border-bottom: 2px solid #21262D;
+    padding: 10px 20px;
+    margin-bottom: 20px;
+    align-items: center;
+}
+
+/* Tabs - Neon Underline */
+.stTabs [data-baseweb="tab-list"] {
+    border-bottom: 1px solid #21262D;
+    gap: 30px;
+}
+
+.stTabs [data-baseweb="tab"] {
+    background: transparent;
+    border: none;
+    color: #8B949E;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 1.1rem;
+    padding-bottom: 10px;
+}
+
+.stTabs [aria-selected="true"] {
+    color: #00FF9F !important;
+    border-bottom: 3px solid #00FF9F;
+    text-shadow: 0 0 10px rgba(0, 255, 159, 0.4);
+}
+
+/* Sidebar */
+section[data-testid="stSidebar"] {
+    background-color: #010409;
+    border-right: 1px solid #21262D;
+}
+
+/* Tables */
+div[data-testid="stDataFrame"] {
+    border: 1px solid #30363D;
+    border-radius: 4px;
+}
+
+/* Log Container */
+.log-box {
+    background-color: #000000;
+    border: 1px solid #30363D;
+    border-radius: 4px;
+    font-family: 'Roboto Mono', monospace;
+    font-size: 12px;
+    height: 400px;
+    overflow-y: auto;
+    padding: 10px;
+    box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.8);
+}
+
+.log-row {
+    padding: 3px 5px;
+    border-bottom: 1px solid #161B22;
+    display: flex;
+    justify-content: space-between;
+}
+
+.log-row:hover {
+    background-color: #161B22;
+}
+
+.log-high {
+    color: #FF4B4B;
+    border-left: 3px solid #FF4B4B;
+}
+
+.log-mod {
+    color: #FFC857;
+    border-left: 3px solid #FFC857;
+}
+
+.log-low {
+    color: #00FF9F;
+    border-left: 3px solid #00FF9F;
+}
+
+/* Threat Indicators */
+.threat-level-low {
+    color: #00FF9F;
+    text-shadow: 0 0 10px #00FF9F;
+    font-weight: 800;
+}
+
+.threat-level-mod {
+    color: #FFC857;
+    text-shadow: 0 0 10px #FFC857;
+    font-weight: 800;
+}
+
+.threat-level-high {
+    color: #FF4B4B;
+    text-shadow: 0 0 15px #FF4B4B;
+    animation: pulse-red 1s infinite;
+    font-weight: 800;
+}
+
+@keyframes pulse-red {
+    0% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.6;
+    }
+
+    100% {
+        opacity: 1;
+    }
+}
+
+/* Buttons */
+.stButton>button {
+    background-color: #1F6FEB;
+    color: white;
+    border-radius: 4px;
+    text-transform: uppercase;
+    font-weight: 600;
+    letter-spacing: 1px;
+    border: 1px solid #30363D;
+}
+
+.stButton>button:hover {
+    background-color: #00FF9F;
+    color: black;
+    box-shadow: 0 0 15px rgba(0, 255, 159, 0.5);
+}

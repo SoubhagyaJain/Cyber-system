@@ -1,0 +1,58 @@
+# ── Datasets (multi-GB, never belong in Docker images) ────────────────────────
+*.csv
+*.parquet
+*.feather
+*.h5
+*.hdf5
+
+# ── Python ────────────────────────────────────────────────────────────────────
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# ── ML artifacts ──────────────────────────────────────────────────────────────
+*.pkl
+*.joblib
+*.model
+*.bin
+*.pt
+*.pth
+*.onnx
+
+# ── Node ──────────────────────────────────────────────────────────────────────
+node_modules/
+dist/
+build/
+.cache/
+
+# ── Git / IDE ─────────────────────────────────────────────────────────────────
+.git/
+.gitignore
+.vscode/
+.idea/
+
+# ── OS ────────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── Environment ──────────────────────────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+
+# ── Docs (not needed in images) ──────────────────────────────────────────────
+*.md
+LICENSE
+
+# ── Misc ──────────────────────────────────────────────────────────────────────
+package-lock.json
+.pytest_cache/
+htmlcov/
+.coverage
+.ipynb_checkpoints/
+*.ipynb
+logs/
