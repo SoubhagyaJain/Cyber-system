@@ -11,15 +11,18 @@ WORKDIR /app
 # System deps for scikit-learn, xgboost, numpy (C extensions)
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-        build-essential \
-        curl \
-        libgomp1 \
+    build-essential \
+    curl \
+    libgomp1 \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first → cache pip install layer
 COPY requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
+    pip install --no-cache-dir -r requirements.txt && \
+    # Remove NVIDIA GPU packages — CPU-only containers don't need CUDA (~400MB saved)
+    pip uninstall -y $(pip list --format=freeze | grep -i nvidia | cut -d= -f1) 2>/dev/null || true && \
+    pip cache purge
 
 # ── Stage 2: Runtime ─────────────────────────────────────────────────────────
 FROM python:3.11-slim AS runtime
@@ -29,8 +32,8 @@ WORKDIR /app
 # Runtime-only system deps (libgomp for xgboost OpenMP, curl for healthcheck)
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-        libgomp1 \
-        curl \
+    libgomp1 \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy installed Python packages from builder

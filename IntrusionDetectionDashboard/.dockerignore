@@ -1,0 +1,34 @@
+# ── ML artifacts (regenerated at runtime) ────────────────────
+models/
+*.joblib
+*.pkl
+*.model
+*.bin
+*.onnx
+
+# ── Git ───────────────────────────────────────────────────────
+.git/
+.gitignore
+
+# ── Datasets ─────────────────────────────────────────────────
+*.csv
+*.parquet
+*.h5
+*.hdf5
+
+# ── Python ────────────────────────────────────────────────────
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# ── IDE / OS ─────────────────────────────────────────────────
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# ── Logs ─────────────────────────────────────────────────────
+logs/
+*.log
