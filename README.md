@@ -1,251 +1,192 @@
 <div align="center">
 
 # 🛡️ CyberSentinel AI
+### Real-Time Network Intrusion Detection + Explainable SOC Dashboard  
+**React Dashboard + FastAPI Inference API + Streamlit SOC Console — fully Dockerized** 🐳🚀
 
-**Real-Time Network Intrusion Detection & AI-Powered SOC Dashboard**
-
-*5 ML models trained concurrently, auto-promoted by F1, explained in plain English — run with one command.*
+✅ **Live Demo (Vercel):** https://cyber-sentinel-ai-ten.vercel.app/
 
 [![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
-[![React](https://img.shields.io/badge/React_18-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev/)
+[![React](https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev/)
 [![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
 [![Streamlit](https://img.shields.io/badge/Streamlit-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white)](https://streamlit.io/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)](LICENSE)
 
 </div>
 
 ---
 
-## 🌐 Live Demo (No Setup)
+## Why this exists 🎯
+Most ML security projects stop at a notebook. Real SOC workflows need:
 
-✅ **React Dashboard (Vercel):** https://cyber-sentinel-ai-ten.vercel.app/
+- **Fast detection** (latency matters)
+- **Benchmarking across models** (accuracy vs speed tradeoffs)
+- **Explainability** (why was this flagged?)
+- **A usable UI** for both executives (dashboard) and analysts (SOC console)
 
-> ⚠️ The **localhost links below only work after you run the project locally** using Docker.
-
-## Why This Exists
-
-Enterprise SOCs face three recurring failures:
-
-- **Black-box alerts** — ML flags a packet but can't explain *why*, causing analyst fatigue and eroded trust.
-- **Single-model fragility** — One model overfits or misses novel vectors. No benchmark, no fallback.
-- **"Works on my machine"** — Demo environments require 5 manual setup steps. Recruiters and reviewers give up.
-
-CyberSentinel solves all three: multi-model benchmarking with XAI explanations, packaged in a one-command Docker stack.
+CyberSentinel is built like a production-style system: **API + UI + monitoring-style views + Docker**.
 
 ---
 
-## What I Built
-
-| Capability | Implementation |
-|:---|:---|
-| **5-Model Concurrent Training** | Random Forest, Decision Tree, Gaussian NB, XGBoost, MLP — all evaluated on 6 metrics |
-| **Dynamic Model Promotion** | Best-F1 model auto-promoted to live inference. Manual override available. |
-| **Explainable AI Engine** | Feature importance + intelligent category detection → human-readable explanations per packet |
-| **React SOC Dashboard** | 14-component reactive UI with live telemetry, severity rings, attack geo-maps |
-| **Streamlit Analyst Console** | 841-line, 5-tab analytical dashboard with SHAP, confusion matrices, ROC curves |
-| **Nginx Reverse Proxy** | Frontend `:3000` proxies `/api/*` → backend container. Zero CORS. Zero env-var wiring. |
-| **Synthetic Data Fallback** | No datasets needed — system auto-generates realistic attack distributions (60/15/10/10/5%) |
-| **Docker Healthchecks** | All 3 services monitored. Frontend waits for backend to be healthy before starting. |
+## What you get ✅
+- **Multi-model training + evaluation** (5 models) with side-by-side comparison
+- **Auto-promotion**: pick the best model using **Weighted F1**
+- **Low-latency inference** with practical latency tradeoffs
+- **Explainability** (SOC console diagnostics, SHAP-style insights where applicable)
+- **Full-stack UI**:
+  - 📊 **React Dashboard** (telemetry + threat visualization)
+  - 🧑‍💻 **Streamlit SOC Console** (analyst diagnostics)
+- **Docker Compose**: run everything with one command
+- **Nginx reverse proxy**: `/api/* → backend` (no CORS headaches)
 
 ---
 
-## Proof — Model Benchmarks
+## Proof: Resume-grade metrics 📊
 
-> Evaluated on 100,000 synthetic network flow samples (15 TCP/IP features, 5 attack classes).
+### Model benchmarking (from the dashboard “Model Comparison”)
+| Model | F1 (%) | Accuracy (%) | Precision (%) | Train Time (s) |
+|------|--------:|-------------:|--------------:|---------------:|
+| Random Forest | 71.2 | 73.7 | 71.3 | 3.60 |
+| XGBoost | 68.5 | 75.1 | 71.3 | 1.21 |
+| MLP | 70.6 | 71.2 | 70.6 | 28.52 |
+| Gaussian NB | 67.7 | 72.3 | 70.6 | 0.05 |
+| Decision Tree | 70.7 | 70.5 | 70.8 | 0.46 |
 
-| Model | Accuracy | Precision | Recall | F1 (Weighted) | ROC-AUC | Train Time |
-|:---|:---:|:---:|:---:|:---:|:---:|:---:|
-| **Random Forest** | ~95%+ | ~95%+ | ~95%+ | ~95%+ | ~0.99 | ~2–4s |
-| **Decision Tree** | ~93%+ | ~93%+ | ~93%+ | ~93%+ | ~0.96 | <0.5s |
-| **Gaussian NB** | ~70%+ | ~75%+ | ~70%+ | ~68%+ | ~0.90 | <0.1s |
-| **XGBoost** | ~94%+ | ~94%+ | ~94%+ | ~94%+ | ~0.99 | ~1–3s |
-| **MLP** | ~92%+ | ~92%+ | ~92%+ | ~92%+ | ~0.98 | ~3–8s |
+### Inference latency tradeoffs (deployment signal)
+| Model | Inference latency (approx.) |
+|------|------------------------------|
+| Random Forest | ~1–3 ms / batch |
+| Decision Tree | <0.5 ms |
+| Gaussian NB | <0.1 ms |
 
-**Selection logic:** Best Weighted-F1 is auto-promoted. RF and XGBoost consistently dominate. Gaussian NB trades accuracy for sub-millisecond inference.
-
-> *Exact metrics vary per run. Train the models yourself with `docker compose up` → click "Train All" in the dashboard.*
-
----
-
-## Architecture
-
-```
-Browser ──→ Nginx (:3000) ──→ /api/* ──→ FastAPI (:8000) ──→ ML Engine
-                │                              │
-                │                              ├── 5 Models (RF/DT/NB/XGB/MLP)
-                │                              ├── In-Memory Threat State
-                │                              └── Synthetic Data Generator
-                │
-                └── Static React SPA (14 components, Recharts, Framer Motion)
-
-Browser ──→ Streamlit (:8501) ──→ Direct Python ML (5 tabs, SHAP, Plotly)
-```
-
-**Key design decisions:**
-- **Nginx reverse-proxy** eliminates CORS entirely — browser hits same origin, nginx forwards `/api/*`
-- **Synthetic fallback** means the system runs anywhere without private datasets
-- **In-memory state** keeps latency sub-5ms per prediction batch (no database round-trips)
+**Why this matters:** it shows you measured **both accuracy and runtime**, which is what production teams care about.
 
 ---
 
-## 🐳 Run Locally (2 Minutes)
+## Architecture (quick view) 🧩
+**User Interfaces**
+- React Dashboard (executive view)
+- Streamlit SOC Console (analyst view)
 
-### Prerequisites
+**Edge / Routing**
+- Nginx serves the dashboard and proxies `/api/*` to the backend
 
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/) 4.0+
+**Core**
+- FastAPI inference API
+- Model registry + selection (Weighted F1 auto-promotion)
+- In-memory threat aggregation for fast UI refresh
 
-### Start
+📌 For the full architectural breakdown, see **ARCHITECTURE.md** (deep dive).
 
+---
+
+## Run locally (2 minutes) 🐳
+
+> ⚠️ `localhost` links work only after you run Docker locally.
+
+### 1) Start (demo / prod-like)
 ```bash
 git clone https://github.com/SoubhagyaJain/Cyber-system.git
 cd Cyber-system
 docker compose up --build -d
 ```
 
-### Access
+### 2) Access
+| Service | URL |
+|---|---|
+| React Dashboard | http://localhost:3000 |
+| FastAPI Docs | http://localhost:8000/docs |
+| Streamlit SOC Console | http://localhost:8501 |
 
-| Service | URL | What You See |
-|:---|:---|:---|
-| **React Dashboard** | [http://localhost:3000](http://localhost:3000) | Attack Surface Dashboard with live telemetry |
-| **FastAPI Docs** | [http://localhost:8000/docs](http://localhost:8000/docs) | Interactive Swagger API explorer |
-| **Streamlit Console** | [http://localhost:8501](http://localhost:8501) | Analyst SOC with SHAP + model comparison |
-
-### Verify
-
+### 3) Verify health
 ```bash
-docker compose ps                              # All 3 services: (healthy)
-curl http://localhost:8000/api/health           # {"status":"ok","models_loaded":0}
-curl http://localhost:3000/api/health           # Same — proves Nginx proxy works
+docker compose ps
+curl -i http://localhost:8000/api/health
+curl -i http://localhost:3000/api/health
 ```
 
-### Stop
-
+### 4) Stop
 ```bash
 docker compose down
 ```
 
 ---
 
-## 🔧 Development Mode (Hot Reload)
-
+## Development mode (hot reload) ⚡
 ```bash
 docker compose -f docker-compose.dev.yml up --build -d
 ```
 
-| Service | URL | Hot Reload |
-|:---|:---|:---|
-| Vite Dev Server | [http://localhost:5173](http://localhost:5173) | ✅ HMR on save |
-| FastAPI | [http://localhost:8000](http://localhost:8000) | ✅ Uvicorn `--reload` |
-| Streamlit | [http://localhost:8501](http://localhost:8501) | ✅ Auto-rerun |
+Typical dev ports:
+- React (Vite): http://localhost:5173
+- FastAPI: http://localhost:8000
+- Streamlit: http://localhost:8501
 
+---
+
+## Repository structure 📁
+```txt
+.
+├── cyber-dashboard/               # React dashboard (Nginx in prod)
+├── backend/ (or cyber-dashboard/backend/)  # FastAPI inference API
+├── IntrusionDetectionDashboard/   # Streamlit SOC console
+├── docker-compose.yml             # prod/demo stack
+├── docker-compose.dev.yml         # dev hot reload stack
+├── Makefile                       # shortcuts (up/dev/logs/down/clean)
+├── ARCHITECTURE.md                # deep architecture reference
+└── README.md
+```
+
+---
+
+## Large assets policy (important) 🧯
+This repo intentionally does **not** store multi-GB datasets or large binary artifacts in Git.
+
+- Datasets (`*.csv`, etc.) are **gitignored**
+- Model artifacts (`*.joblib`, `*.pkl`) are **gitignored**
+- Docker uses **synthetic / fallback data** so the demo runs out-of-the-box
+
+This keeps the repo clone fast and avoids GitHub size limits.
+
+---
+
+## Troubleshooting 🧰
+
+### “localhost link shows error”
+You must run Docker first:
 ```bash
-# Useful commands
-docker compose logs -f backend          # Tail backend logs
-docker compose up --build -d --no-deps backend   # Rebuild one service
-docker compose -f docker-compose.dev.yml down     # Stop dev
+docker compose up --build -d
 ```
 
----
+### Port already in use (3000/8000/8501)
+Stop the service using the port or change the port mappings in `docker-compose.yml`.
 
-## Repository Structure
-
-```
-Cyber-system/
-├── cyber-dashboard/                    # React + FastAPI full-stack app
-│   ├── Dockerfile                      # 3-stage: Node → Vite build → Nginx (~30MB)
-│   ├── nginx.conf                      # SPA routing + /api/* reverse proxy
-│   ├── src/                            # React 18 + TailwindCSS + Framer Motion
-│   │   ├── components/                 # 14 UI components (ModelSection, LiveTraffic, etc.)
-│   │   └── api.js                      # API client (env-based URL)
-│   └── backend/
-│       ├── Dockerfile                  # Multi-stage Python 3.11 + healthcheck
-│       ├── server.py                   # FastAPI: 9 endpoints, in-memory state
-│       └── ml/                         # data.py (3-tier loader) + engine.py (5 models)
-│
-├── IntrusionDetectionDashboard/        # Streamlit SOC Console (841 lines, 5 tabs)
-│   ├── Dockerfile                      # Python 3.11 + Streamlit
-│   ├── app.py                          # Overview, Real-Time Ops, Model Comparison, XAI, Resources
-│   └── utils/                          # preprocessing, training, evaluation, explainability
-│
-├── docker-compose.yml                  # Production (Nginx + FastAPI + Streamlit)
-├── docker-compose.dev.yml              # Development (hot-reload all services)
-├── Makefile                            # make up/down/dev/logs/clean
-├── .dockerignore                       # Excludes datasets, venvs, node_modules
-└── data_server.py                      # Optional: stream large CSVs via ngrok
-```
-
----
-
-## Configuration
-
+### Service unhealthy / not starting
 ```bash
-cp .env.docker .env                     # Root env template
+docker compose logs -f backend
+docker compose logs -f frontend
+docker compose logs -f streamlit
 ```
 
-| Variable | Default | Description |
-|:---|:---|:---|
-| `VITE_API_BASE` | *(empty)* | Empty in Docker (nginx proxies). Set for direct access. |
-| `DATA_SOURCE_URL` | *(empty)* | Optional remote dataset server URL |
-| `OMP_NUM_THREADS` | `1` | Thread safety for sklearn/xgboost |
-
-> **No large datasets in this repo.** The system uses synthetic data by default. To train on real data, use `data_server.py` with ngrok.
+### Force rebuild
+```bash
+docker compose down
+docker compose up --build --force-recreate -d
+```
 
 ---
 
-## API Reference
-
-| Method | Endpoint | Description |
-|:---|:---|:---|
-| `GET` | `/api/health` | Liveness probe + loaded model count |
-| `POST` | `/api/train` | Train one/all models. Body: `{model_name?, sample_size}` |
-| `GET` | `/api/models` | Model registry with metrics + feature importance |
-| `POST` | `/api/predict` | Simulate N packet predictions. Body: `{count}` |
-| `POST` | `/api/set-active/{name}` | Override active model |
-| `GET` | `/api/dashboard` | Aggregated stats: packets, threats, model info |
-| `GET` | `/api/system` | Live RAM/CPU metrics |
-| `POST` | `/api/simulation/reset` | Reset all simulation state |
-
-Full Swagger docs at [http://localhost:8000/docs](http://localhost:8000/docs).
+## Skills demonstrated (recruiter keywords) 🧠
+- ML evaluation: **F1 / precision / accuracy**, benchmarking, model selection
+- Performance: **latency-aware inference**, tradeoff analysis
+- System design: API ↔ UI separation, modular components
+- Backend: **FastAPI**, healthchecks, service boundaries
+- Frontend: **React dashboard**, telemetry-style UI
+- MLOps-lite: model registry/selection, reproducible execution with Docker
+- DevOps: **Docker, Compose, Nginx reverse proxy**, release-style runbook
 
 ---
 
-## Troubleshooting
-
-| Issue | Fix |
-|:---|:---|
-| Port conflict (3000/8000/8501) | Change host ports in `docker-compose.yml` |
-| Frontend blank page | Backend not ready yet. Check: `docker compose ps` |
-| Healthcheck failing | `docker compose logs backend` — look for import errors |
-| Stale build | `docker compose build --no-cache` |
-| High memory during training | Reduce `sample_size` in the Train request (default: 100k) |
-
----
-
-## Skills Demonstrated
-
-| Category | Details |
-|:---|:---|
-| **Machine Learning** | Multi-model training, evaluation (6 metrics), auto-selection, confusion matrices, ROC-AUC |
-| **Explainable AI** | Feature importance, SHAP values, intelligent category detection, human-readable narratives |
-| **System Design** | 3-service architecture, reverse proxy, in-memory state, synthetic data fallback |
-| **Docker / DevOps** | Multi-stage builds, Compose v2, healthchecks, layer caching, `.dockerignore`, Makefile |
-| **Backend (FastAPI)** | REST API, Pydantic models, CORS middleware, `/docs` auto-generation, state management |
-| **Frontend (React)** | 14-component SPA, Recharts live charts, Framer Motion animations, TailwindCSS, Vite HMR |
-| **Data Engineering** | 3-tier data loading, chunked CSV streaming, memory-safe downcasting, global caching |
-
----
-
-## License
-
-MIT — see [LICENSE](LICENSE) for details.
-
----
-
-<div align="center">
-
-**Built by [Soubhagya Jain](https://github.com/SoubhagyaJain)**
-
-*Securing the zero-trust network layer, one packet vector at a time.*
-
-</div>
+## Contact 📬
+- GitHub: https://github.com/SoubhagyaJain  
+- Live Demo: https://cyber-sentinel-ai-ten.vercel.app/
