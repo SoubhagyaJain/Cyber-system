@@ -124,8 +124,9 @@ def _generate_synthetic_data(n_samples=10000):
 @st.cache_data(show_spinner=False)
 def preprocess_data(df, target_col=TARGET_COLUMN):
     """
-    Clean, Encode, and Scale the data.
-    Returns: X, y, label_encoder_target, scaler
+    Clean, Encode (but do NOT scale) the data.
+    Scaling must happen AFTER train/test split to prevent data leakage.
+    Returns: X (unscaled), y, label_encoder_target
     """
     try:
         logger.info("Starting preprocessing...")
@@ -142,7 +143,6 @@ def preprocess_data(df, target_col=TARGET_COLUMN):
             X[num_cols] = imputer.fit_transform(X[num_cols])
 
         # Categorical Encoding (Features)
-        # We need to handle potential string columns
         cat_cols = X.select_dtypes(exclude=['number']).columns
         for col in cat_cols:
             le = LabelEncoder()
@@ -152,16 +152,28 @@ def preprocess_data(df, target_col=TARGET_COLUMN):
         le_target = LabelEncoder()
         y = le_target.fit_transform(y.astype(str))
 
-        # Scaling
-        scaler = StandardScaler()
-        X_scaled = pd.DataFrame(scaler.fit_transform(X), columns=X.columns)
-
-        return X_scaled, y, le_target, scaler
+        # NOTE: Scaling intentionally NOT done here.
+        # Use scale_after_split() after calling split_data().
+        return X, y, le_target
 
     except Exception as e:
         logger.error(f"Preprocessing failed: {e}")
         st.error(f"Preprocessing Error: {e}")
-        return None, None, None, None
+        return None, None, None
+
+
+def scale_after_split(X_train, X_test):
+    """
+    Fit scaler on train only, transform both — prevents data leakage.
+    Call this AFTER split_data(), never before.
+    Returns: X_train_scaled, X_test_scaled, fitted scaler
+    """
+    scaler = StandardScaler()
+    cols = X_train.columns
+    X_train_scaled = pd.DataFrame(scaler.fit_transform(X_train), columns=cols)
+    X_test_scaled  = pd.DataFrame(scaler.transform(X_test), columns=cols)
+    logger.info("Scaler fitted on train only ✓ (no data leakage)")
+    return X_train_scaled, X_test_scaled, scaler
 
 def split_data(X, y, test_size=0.3, random_state=42):
     """

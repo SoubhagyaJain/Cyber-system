@@ -1,14 +1,21 @@
 import pandas as pd
+import numpy as np
 import plotly.graph_objects as go
 import plotly.express as px
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix, roc_auc_score, roc_curve
+from sklearn.metrics import (
+    accuracy_score, precision_score, recall_score, f1_score,
+    confusion_matrix, roc_auc_score, roc_curve,
+    average_precision_score, classification_report,
+)
+from sklearn.preprocessing import label_binarize
 from utils.logger import setup_logger
 
 logger = setup_logger()
 
 def evaluate_model(model, X_test, y_test):
     """
-    Calculate performance metrics.
+    Calculate performance metrics — weighted + macro + per-class.
+    Returns: metrics dict, y_pred, y_proba
     """
     try:
         y_pred = model.predict(X_test)
@@ -16,20 +23,43 @@ def evaluate_model(model, X_test, y_test):
         # Calculate proba only if model supports it
         try:
             y_proba = model.predict_proba(X_test)
-        except:
+        except Exception:
             y_proba = None
 
         metrics = {
             "Accuracy": accuracy_score(y_test, y_pred),
-            "Precision": precision_score(y_test, y_pred, average='weighted'),
-            "Recall": recall_score(y_test, y_pred, average='weighted'),
-            "F1 Score": f1_score(y_test, y_pred, average='weighted')
+            "Precision": precision_score(y_test, y_pred, average='weighted', zero_division=0),
+            "Recall": recall_score(y_test, y_pred, average='weighted', zero_division=0),
+            "F1 Score": f1_score(y_test, y_pred, average='weighted', zero_division=0),
+            # Macro averages — equally weight each class regardless of size
+            "F1 (macro)": f1_score(y_test, y_pred, average='macro', zero_division=0),
+            "Precision (macro)": precision_score(y_test, y_pred, average='macro', zero_division=0),
+            "Recall (macro)": recall_score(y_test, y_pred, average='macro', zero_division=0),
         }
+
+        # PR-AUC (requires probabilities)
+        if y_proba is not None:
+            try:
+                n_classes = y_proba.shape[1]
+                y_bin = label_binarize(y_test, classes=range(n_classes))
+                if y_bin.shape[1] == 1:
+                    y_bin = np.hstack([1 - y_bin, y_bin])
+                metrics["PR-AUC"] = average_precision_score(y_bin, y_proba, average='weighted')
+            except Exception:
+                metrics["PR-AUC"] = 0.0
         
         return metrics, y_pred, y_proba
     except Exception as e:
         logger.error(f"Evaluation failed: {e}")
         return {}, [], None
+
+
+def get_classification_report(y_test, y_pred, class_names):
+    """
+    Returns per-class precision, recall, F1 as a formatted string.
+    Useful for diagnosing which class drags overall metrics down.
+    """
+    return classification_report(y_test, y_pred, target_names=class_names, digits=4)
 
 def plot_confusion_matrix(y_true, y_pred, labels):
     """

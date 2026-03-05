@@ -151,7 +151,8 @@ def load_data(data_dir=None, sample_size=100000):
 
 
 def preprocess_data(df):
-    """Clean, encode, scale. Returns X, y, label_encoder, scaler, feature_names."""
+    """Clean, encode (but do NOT scale). Scaling happens after split via scale_after_split().
+    Returns X (unscaled), y, label_encoder, feature_names."""
     df = df.copy()
     X = df.drop(columns=[TARGET_COLUMN])
     y = df[TARGET_COLUMN]
@@ -172,11 +173,20 @@ def preprocess_data(df):
     le_target = LabelEncoder()
     y_encoded = le_target.fit_transform(y.astype(str))
 
-    # Scale
-    scaler = StandardScaler()
-    X_scaled = pd.DataFrame(scaler.fit_transform(X), columns=X.columns)
+    # NOTE: Scaling intentionally NOT done here — use scale_after_split() after split.
+    return X, y_encoded, le_target, X.columns.tolist()
 
-    return X_scaled, y_encoded, le_target, scaler, X.columns.tolist()
+
+def scale_after_split(X_train, X_test):
+    """Fit scaler on train only, transform both — prevents data leakage."""
+    scaler = StandardScaler()
+    cols = X_train.columns if isinstance(X_train, pd.DataFrame) else None
+    X_train_s = scaler.fit_transform(X_train)
+    X_test_s  = scaler.transform(X_test)
+    if cols is not None:
+        X_train_s = pd.DataFrame(X_train_s, columns=cols)
+        X_test_s  = pd.DataFrame(X_test_s, columns=cols)
+    return X_train_s, X_test_s, scaler
 
 
 def split_data(X, y, test_size=0.3):
@@ -197,3 +207,4 @@ def split_data(X, y, test_size=0.3):
         y_train, y_test = y[train_idx], y[test_idx]
         
     return X_train, X_test, y_train, y_test
+
