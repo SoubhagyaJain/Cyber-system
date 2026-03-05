@@ -1,4 +1,12 @@
+<!-- ===========================
+   🛡️ CyberSentinel AI — CRAZY UI README
+   (All original data preserved)
+=========================== -->
+
 <div align="center">
+
+<!-- 🎨 Premium animated banner -->
+<img width="100%" src="https://capsule-render.vercel.app/api?type=waving&color=0:0b1220,100:2563eb&height=220&section=header&text=CyberSentinel%20AI&fontSize=56&fontColor=ffffff&animation=twinkling&fontAlignY=35&desc=Real-time%20Network%20Intrusion%20Detection%20%7C%206-Phase%20ML%20Optimization%20%7C%20Dual%20Dashboards%20%7C%20One-Command%20Docker&descAlignY=62&descSize=16" />
 
 # 🛡️ CyberSentinel AI
 
@@ -13,9 +21,39 @@
 [![XGBoost](https://img.shields.io/badge/XGBoost-2.0+-FF6600)](https://xgboost.readthedocs.io)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-[**Live Demo**](https://cyber-sentinel-ai-ten.vercel.app/) · [**Demo Video**](https://drive.google.com/file/d/1gnCsBd0WMz2MyEXns71qLodzDs0Un9x0/view?usp=sharing) · [**Repository**](https://github.com/SoubhagyaJain/CyberSentinel-AI) · [**Documentation**](#3-architecture)
+<br/>
 
-![Demo](assets/demo.png)
+<a href="https://cyber-sentinel-ai-ten.vercel.app/"><b>🌐 Live Demo</b></a>
+&nbsp;·&nbsp;
+<a href="https://drive.google.com/file/d/1gnCsBd0WMz2MyEXns71qLodzDs0Un9x0/view?usp=sharing"><b>🎥 Demo Video</b></a>
+&nbsp;·&nbsp;
+<a href="https://github.com/SoubhagyaJain/CyberSentinel-AI"><b>📦 Repository</b></a>
+&nbsp;·&nbsp;
+<a href="#3-architecture"><b>📚 Documentation</b></a>
+
+<br/><br/>
+
+<img src="https://readme-typing-svg.demolab.com?font=Fira+Code&size=16&pause=900&color=60A5FA&center=true&vCenter=true&width=820&lines=Leakage-free+ML+pipeline+%E2%9C%85+PR-curve+threshold+tuning+%E2%9C%85+Optuna+HPO+%E2%9C%85;Real-time+packet+simulation+%E2%9A%A1+SOC-style+React+dashboard+%F0%9F%96%A5%EF%B8%8F+Streamlit+analytics+%F0%9F%93%8A;Explainable+AI+with+SHAP+%F0%9F%A7%A0+One-command+Docker+deploy+%F0%9F%90%B3" />
+
+<br/><br/>
+
+<p>
+  <a href="#1-what-it-does">What it does</a> •
+  <a href="#2-proof--results">Proof</a> •
+  <a href="#3-architecture">Architecture</a> •
+  <a href="#4-features">Features</a> •
+  <a href="#5-tech-stack">Tech Stack</a> •
+  <a href="#6-quickstart-local">Quickstart</a> •
+  <a href="#7-docker-recommended">Docker</a> •
+  <a href="#8-api-reference">API</a> •
+  <a href="#9-project-structure">Structure</a> •
+  <a href="#10-testing--quality">Testing</a> •
+  <a href="#11-roadmap">Roadmap</a>
+</p>
+
+<br/>
+
+<img src="assets/demo.png" alt="Demo" />
 
 </div>
 
@@ -23,12 +61,38 @@
 
 ## 1. What It Does
 
+<table>
+  <tr>
+    <td width="50%" valign="top">
+
+### 🔍 Detection
 - 🔍 **Classifies network traffic** into Normal, DoS, DDoS, Reconnaissance, and Theft using 5 ML models trained on 10GB+ of NetFlow data
 - ⚡ **Real-time packet simulation** — simulates live threat detection with per-packet confidence scores, source IP tracking, and rolling attack-rate computation
+
+</td>
+<td width="50%" valign="top">
+
+### 🧠 Explainability + Ops
 - 🧠 **Explainable AI (XAI)** — auto-generated model behavior narratives, SHAP-based feature attribution, and per-packet decision reasoning
 - 📊 **Dual dashboard system** — a React SOC command center for operations and a Streamlit analytics dashboard for model comparison and deep analysis
+
+</td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+
+### 🎯 ML Methodology
 - 🎯 **6-phase optimization pipeline** — feature engineering → leakage-free split → class-weighted training → PR-curve threshold tuning → Optuna HPO → comprehensive evaluation
+
+</td>
+<td width="50%" valign="top">
+
+### 🐳 Deployment
 - 🐳 **One-command deployment** — production Docker Compose with health checks, Nginx reverse proxy, gzip compression, and security headers
+
+</td>
+  </tr>
+</table>
 
 ### Why It Matters
 
@@ -351,7 +415,10 @@ Base URL: `http://localhost:8000`
 
 ## 9. Project Structure
 
-```
+<details>
+<summary><b>📁 Click to expand full project tree</b></summary>
+
+```text
 CyberSentinel-AI/
 ├── cyber-dashboard/                  # React + FastAPI application
 │   ├── src/                          # React 18 frontend source
@@ -404,6 +471,8 @@ CyberSentinel-AI/
 └── .dockerignore                     # Exclude datasets/models from image build
 ```
 
+</details>
+
 ---
 
 ## 10. Testing + Quality
@@ -413,21 +482,21 @@ CyberSentinel-AI/
 | ML Pipeline Validation | ✅ Implemented | `python optimize_models.py` — prints per-class report + comparison table |
 | API Health Check | ✅ Implemented | `curl http://localhost:8000/api/health` |
 | Container Health | ✅ Implemented | All 3 services have Docker `HEALTHCHECK` directives |
-| Lint / Format | `TODO` | Add ESLint for frontend, ruff/black for backend |
-| Unit Tests | `TODO` | Add pytest for `ml/` module, Vitest for React components |
-| CI/CD | `TODO` | Add GitHub Actions: lint → test → Docker build → push |
-| Load Testing | `TODO` | Benchmark `/api/predict` throughput with `wrk` or `locust` |
+| Lint / Format | TODO | Add ESLint for frontend, ruff/black for backend |
+| Unit Tests | TODO | Add pytest for `ml/` module, Vitest for React components |
+| CI/CD | TODO | Add GitHub Actions: lint → test → Docker build → push |
+| Load Testing | TODO | Benchmark `/api/predict` throughput with `wrk` or `locust` |
 
 ---
 
 ## 11. Roadmap
 
-- [ ] 📊 **Persist benchmark results** — save `optimize_models.py` output to `results/` and auto-populate README metrics
-- [ ] 🧪 **Add test suites** — pytest for ML pipeline correctness, Vitest for React components, Playwright for E2E
-- [ ] 🚀 **CI/CD pipeline** — GitHub Actions: lint → test → multi-arch Docker build → GHCR push
-- [ ] 🔔 **Alert system** — webhook notifications (Slack/Discord) when threat level exceeds threshold
-- [ ] 📡 **Live data ingestion** — replace simulation with real NetFlow/sFlow capture via `goflow` or `ntopng`
-- [ ] 🧠 **Deep learning models** — add 1D-CNN and LSTM models for sequential flow analysis
+- [ ] 📊 Persist benchmark results — save `optimize_models.py` output to `results/` and auto-populate README metrics
+- [ ] 🧪 Add test suites — pytest for ML pipeline correctness, Vitest for React components, Playwright for E2E
+- [ ] 🚀 CI/CD pipeline — GitHub Actions: lint → test → multi-arch Docker build → GHCR push
+- [ ] 🔔 Alert system — webhook notifications (Slack/Discord) when threat level exceeds threshold
+- [ ] 📡 Live data ingestion — replace simulation with real NetFlow/sFlow capture via `goflow` or `ntopng`
+- [ ] 🧠 Deep learning models — add 1D-CNN and LSTM models for sequential flow analysis
 
 ---
 
@@ -469,5 +538,9 @@ MIT — see [LICENSE](LICENSE) for details.
 <div align="center">
 
 Built with ☕ and a healthy distrust of default thresholds.
+
+<br/><br/>
+
+<img width="100%" src="https://capsule-render.vercel.app/api?type=waving&color=0:2563eb,100:0b1220&height=120&section=footer" />
 
 </div>
