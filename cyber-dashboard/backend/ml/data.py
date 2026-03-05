@@ -20,7 +20,7 @@ FEATURE_COLUMNS = [c for c in SELECTED_COLUMNS if c != TARGET_COLUMN]
 
 
 def generate_synthetic_data(n_samples=10000):
-    """Generate realistic synthetic network flow data."""
+    """Generate realistic synthetic network flow data for exactly n_samples rows."""
     np.random.seed(42)
 
     labels = ['Normal', 'DoS', 'DDoS', 'Reconnaissance', 'Theft']
@@ -52,6 +52,7 @@ def generate_synthetic_data(n_samples=10000):
     df.loc[attack_mask, 'TCP_WIN_SCALE_IN'] = np.random.randint(10, 15, attack_mask.sum())
     df.loc[attack_mask, 'FLOW_DURATION_MILLISECONDS'] = np.random.randint(0, 500, attack_mask.sum())
 
+    print(f"[data] Generated {len(df):,} synthetic rows ({n_samples:,} requested)")
     return df
 
 
@@ -119,15 +120,17 @@ def load_data(data_dir=None, sample_size=100000):
             fp = data_path / f
             if fp.exists():
                 try:
-                    rows = max(200000, sample_size * 2)
-                    df = pd.read_csv(fp, usecols=SELECTED_COLUMNS, nrows=rows)
-                    df = df.sample(n=min(len(df), sample_size // len(files)), random_state=42)
+                    # Read as many rows as possible from each file, sample later
+                    df = pd.read_csv(fp, usecols=SELECTED_COLUMNS)
                     dfs.append(df)
                 except Exception:
                     pass
         if dfs:
             full = pd.concat(dfs, ignore_index=True).drop_duplicates()
-            print(f"[data] Loaded {len(full):,} rows from local CSV files.")
+            # Sample exactly sample_size rows (or all if less available)
+            n = min(len(full), sample_size)
+            full = full.sample(n=n, random_state=42)
+            print(f"[data] Loaded {n:,} rows from local CSV files ({sample_size:,} requested).")
             _cached_df = full
             _cached_sample_size = sample_size
             return full
@@ -143,7 +146,7 @@ def load_data(data_dir=None, sample_size=100000):
 
     # ── 3. Synthetic fallback ─────────────────────────────────────────────
     print(f"[data] Using synthetic data ({sample_size:,} samples).")
-    synth_df = generate_synthetic_data(sample_size)
+    synth_df = generate_synthetic_data(sample_size)  # pass exact count
     _cached_df = synth_df
     _cached_sample_size = sample_size
     return synth_df
