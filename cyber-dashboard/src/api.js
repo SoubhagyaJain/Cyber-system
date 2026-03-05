@@ -1,4 +1,4 @@
-const API_BASE = import.meta.env.VITE_API_BASE ?? 'http://localhost:8000';
+const API_BASE = import.meta.env.VITE_API_BASE ?? '';
 const API = API_BASE;
 
 export async function trainModels(modelName = null, sampleSize = 100000) {
