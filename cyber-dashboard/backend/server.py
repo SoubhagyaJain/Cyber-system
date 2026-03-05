@@ -22,7 +22,7 @@ from typing import Optional
 # Add backend to path
 sys.path.insert(0, str(Path(__file__).parent))
 
-from ml.data import load_data, preprocess_data, split_data, FEATURE_COLUMNS
+from ml.data import load_data, preprocess_data, split_data, scale_after_split, FEATURE_COLUMNS
 from ml.engine import (
     ALL_MODELS, train_single, evaluate, get_feature_importance,
     simulate_packet, load_latest_joblib
@@ -107,8 +107,9 @@ def train_models(req: TrainRequest):
     if df is None or df.empty:
         raise HTTPException(500, "Failed to load data")
 
-    X, y, le_target, scaler, feat_names = preprocess_data(df)
+    X, y, le_target, feat_names = preprocess_data(df)
     X_train, X_test, y_train, y_test = split_data(X, y)
+    X_train, X_test, scaler = scale_after_split(X_train, X_test)
 
     app.state.classes = le_target.classes_.tolist()
     app.state.feature_names = feat_names

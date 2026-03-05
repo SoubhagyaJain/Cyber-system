@@ -9,7 +9,7 @@ from datetime import datetime
 # Custom Modules
 from config import *
 from utils.logger import setup_logger
-from utils.preprocessing import load_data, preprocess_data, split_data, get_system_metrics
+from utils.preprocessing import load_data, preprocess_data, split_data, scale_after_split, get_system_metrics
 from utils.training import train_model
 from utils.evaluation import evaluate_model, plot_confusion_matrix, plot_roc_curve_multiclass, plot_feature_importance
 from utils.model_io import save_model, load_model, list_models
@@ -283,8 +283,9 @@ with st.sidebar:
                 with st.spinner("Training..."):
                     df = load_data(sample_size=sample_size)
                     if not df.empty:
-                        X, y, le, scaler = preprocess_data(df)
+                        X, y, le = preprocess_data(df)
                         X_train, X_test, y_train, y_test = split_data(X, y)
+                        X_train, X_test, scaler = scale_after_split(X_train, X_test)
                         st.session_state['test_data'] = (X_test, y_test)
                         st.session_state['classes'] = le.classes_
                         st.session_state['feature_names'] = X.columns.tolist()
@@ -328,8 +329,9 @@ with st.sidebar:
         if st.button("⚡ TRAIN ALL MODELS", use_container_width=True, type="primary"):
             df = load_data(sample_size=sample_size)
             if not df.empty:
-                X, y, le, scaler = preprocess_data(df)
+                X, y, le = preprocess_data(df)
                 X_train, X_test, y_train, y_test = split_data(X, y)
+                X_train, X_test, scaler = scale_after_split(X_train, X_test)
                 st.session_state['test_data'] = (X_test, y_test)
                 st.session_state['classes'] = le.classes_
                 st.session_state['feature_names'] = X.columns.tolist()

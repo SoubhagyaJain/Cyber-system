@@ -28,14 +28,16 @@ def _create_model(name, params=None):
     params = params or {}
     if name == "Random Forest":
         return RandomForestClassifier(
-            n_estimators=params.get("n_estimators", 50),
+            n_estimators=params.get("n_estimators", 200),
             max_depth=params.get("max_depth", None),
+            class_weight="balanced",
             random_state=42, n_jobs=-1
         )
     elif name == "Decision Tree":
         return DecisionTreeClassifier(
-            max_depth=params.get("max_depth", None),
+            max_depth=params.get("max_depth", 12),
             criterion=params.get("criterion", "gini"),
+            class_weight="balanced",
             random_state=42
         )
     elif name == "Gaussian NB":
@@ -44,10 +46,12 @@ def _create_model(name, params=None):
         if not HAS_XGBOOST:
             raise ImportError("XGBoost is not installed")
         return XGBClassifier(
-            n_estimators=params.get("n_estimators", 50),
-            learning_rate=params.get("learning_rate", 0.1),
-            max_depth=params.get("max_depth", 3),
-            eval_metric='logloss',
+            n_estimators=params.get("n_estimators", 300),
+            learning_rate=params.get("learning_rate", 0.05),
+            max_depth=params.get("max_depth", 6),
+            subsample=0.8,
+            colsample_bytree=0.8,
+            eval_metric='mlogloss',
             random_state=42, n_jobs=-1
         )
     elif name == "MLP":

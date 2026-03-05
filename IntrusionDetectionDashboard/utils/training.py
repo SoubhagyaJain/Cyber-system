@@ -4,6 +4,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.naive_bayes import GaussianNB
 from sklearn.neural_network import MLPClassifier
+from sklearn.utils.class_weight import compute_sample_weight
 from xgboost import XGBClassifier
 from utils.logger import setup_logger
 
@@ -21,15 +22,17 @@ def train_model(model_name, X_train, y_train, params=None):
     try:
         if model_name == "Random Forest":
             model = RandomForestClassifier(
-                n_estimators=params.get("n_estimators", 50),
+                n_estimators=params.get("n_estimators", 200),
                 max_depth=params.get("max_depth", None),
+                class_weight="balanced",     # handles 60/15/10/10/5 imbalance
                 random_state=42,
                 n_jobs=-1
             )
         elif model_name == "Decision Tree":
             model = DecisionTreeClassifier(
-                max_depth=params.get("max_depth", None),
+                max_depth=params.get("max_depth", 12),
                 criterion=params.get("criterion", "gini"),
+                class_weight="balanced",     # handles class imbalance
                 random_state=42
             )
         elif model_name == "Gaussian NB":
@@ -37,11 +40,12 @@ def train_model(model_name, X_train, y_train, params=None):
         
         elif model_name == "XGBoost":
             model = XGBClassifier(
-                n_estimators=params.get("n_estimators", 50),
-                learning_rate=params.get("learning_rate", 0.1),
-                max_depth=params.get("max_depth", 3),
-                use_label_encoder=False,
-                eval_metric='logloss',
+                n_estimators=params.get("n_estimators", 300),
+                learning_rate=params.get("learning_rate", 0.05),
+                max_depth=params.get("max_depth", 6),
+                subsample=0.8,
+                colsample_bytree=0.8,
+                eval_metric='mlogloss',
                 random_state=42,
                 n_jobs=-1
             )
@@ -57,7 +61,14 @@ def train_model(model_name, X_train, y_train, params=None):
             raise ValueError(f"Unknown model: {model_name}")
 
         start_time = time.time()
-        model.fit(X_train, y_train)
+
+        # XGBoost gets sample_weight for class imbalance handling
+        if model_name == "XGBoost":
+            sample_weights = compute_sample_weight("balanced", y_train)
+            model.fit(X_train, y_train, sample_weight=sample_weights, verbose=False)
+        else:
+            model.fit(X_train, y_train)
+
         training_time = time.time() - start_time
         
         logger.info(f"{model_name} trained in {training_time:.2f}s")
