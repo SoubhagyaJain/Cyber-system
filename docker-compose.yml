@@ -19,6 +19,14 @@ services:
       - MKL_NUM_THREADS=1
       - NUMEXPR_NUM_THREADS=1
       - PYTHONUNBUFFERED=1
+    volumes:
+      # Mount the CSV dataset files so training uses real data
+      - ./dataset-part1.csv:/data/dataset-part1.csv:ro
+      - ./dataset-part2.csv:/data/dataset-part2.csv:ro
+      - ./dataset-part3.csv:/data/dataset-part3.csv:ro
+      - ./dataset-part4.csv:/data/dataset-part4.csv:ro
+      # Mount optimize_models.py for CLI use inside container
+      - ./optimize_models.py:/app/optimize_models.py:ro
     healthcheck:
       test: [ "CMD", "curl", "--fail", "http://localhost:8000/api/health" ]
       interval: 30s

@@ -27,6 +27,7 @@ from ml.engine import (
     ALL_MODELS, train_single, evaluate, get_feature_importance,
     simulate_packet, load_latest_joblib
 )
+from ml.optimizer import run_optimized_training
 
 app = FastAPI(title="CyberSentinel API", version="1.0.0")
 
@@ -92,8 +93,8 @@ def health():
 
 @app.post("/api/train")
 def train_models(req: TrainRequest):
-    """Train one or all models."""
-    # ── Reset simulation state so gauges/severity rings show clean zeros ──
+    """Train one or all models using the full 6-phase optimized pipeline."""
+    # Reset simulation state
     app.state.total_packets = 0
     app.state.blocked_packets = 0
     app.state.attack_history = []
@@ -103,73 +104,65 @@ def train_models(req: TrainRequest):
     app.state.attack_type_counts = {}
     app.state.simulation_running = False
 
-    df = load_data(data_dir=DATA_DIR, sample_size=req.sample_size)
-    if df is None or df.empty:
-        raise HTTPException(500, "Failed to load data")
+    names_to_train = [req.model_name] if req.model_name else list(ALL_MODELS)
 
-    X, y, le_target, feat_names = preprocess_data(df)
-    X_train, X_test, y_train, y_test = split_data(X, y)
-    X_train, X_test, scaler = scale_after_split(X_train, X_test)
-
-    app.state.classes = le_target.classes_.tolist()
-    app.state.feature_names = feat_names
-    app.state.X_test = X_test
-    app.state.y_test = y_test
-
-    names_to_train = [req.model_name] if req.model_name else ALL_MODELS
-
-    # ── Clear only the models that are about to be retrained ──────────────
-    # This ensures the results grid shows EXACTLY what was selected for training.
+    # Clear only the models being retrained
     for n in names_to_train:
         app.state.models.pop(n, None)
-
-    # If the active model is one of the ones being retrained, temporarily unset it
-    # so the auto-select logic can restore it cleanly after training.
     if app.state.active_model_name in names_to_train:
         app.state.active_model = None
         app.state.active_model_name = "None"
 
+    # ── Run the full optimize_models.py pipeline ──────────────────────────────
+    # This runs: feature engineering → leakage-free split → class-weighted training
+    # → PR-curve threshold tuning → comprehensive evaluation
+    opt_results, class_names, feat_names, X_test, y_test = run_optimized_training(
+        names_to_train, req.sample_size
+    )
+
+    app.state.classes = class_names
+    app.state.feature_names = feat_names
+    # Store test tensors from last model (all share the same split)
+    app.state.X_test = X_test
+    app.state.y_test = y_test
+
     results = {}
+    for name, data in opt_results.items():
+        metrics = data["metrics"]
+        model   = data["model"]
 
-
-    for name in names_to_train:
+        # Feature importance (RF / DT / XGBoost support it)
+        feat_imp = []
         try:
-            model, t_time = train_single(name, X_train, y_train)
-            metrics, y_pred, y_proba = evaluate(model, X_test, y_test, app.state.classes)
-            metrics["train_time"] = round(t_time, 3)
+            if hasattr(model, "feature_importances_"):
+                imp = model.feature_importances_.tolist()
+                feat_imp = [
+                    {"feature": f, "importance": round(float(v), 6)}
+                    for f, v in sorted(
+                        zip(feat_names, imp),
+                        key=lambda x: x[1], reverse=True
+                    )[:10]
+                ]
+        except Exception:
+            pass
 
-            app.state.models[name] = {
-                "model": model,
-                "metrics": metrics,
-            }
-            results[name] = metrics
-        except Exception as e:
-            import traceback
-            traceback.print_exc()
-            raise HTTPException(status_code=500, detail=f"Training failed for model '{name}': {e}")
+        metrics["feature_importance"] = feat_imp
 
-    # ── Set active model ──────────────────────────────────────────────────
-    best = None
-    if app.state.models:
-        best = max(
-            app.state.models,
-            key=lambda k: app.state.models[k]["metrics"].get("f1", 0)
-        )
-        if app.state.active_model_name == "None" or app.state.active_model is None:
-            # First training ever — auto-pick the best model
-            app.state.active_model = app.state.models[best]["model"]
-            app.state.active_model_name = best
-        elif app.state.active_model_name in app.state.models:
-            # User's chosen model was just retrained — refresh the object
-            app.state.active_model = app.state.models[app.state.active_model_name]["model"]
-        # else: user's chosen model wasn't in this training batch — keep it as is
+        app.state.models[name] = {
+            "model": model,
+            "metrics": metrics,
+        }
 
-    return {
-        "results": results,
-        "classes": app.state.classes,
-        "active_model": app.state.active_model_name,
-        "best_model": best,
-    }
+        results[name] = metrics
+
+    # Auto-select best model by F1 if none is active
+    if app.state.active_model_name == "None" and app.state.models:
+        best = max(app.state.models, key=lambda k: app.state.models[k]["metrics"].get("f1", 0))
+        app.state.active_model = app.state.models[best]["model"]
+        app.state.active_model_name = best
+
+    return {"status": "trained", "results": results}
+
 
 
 @app.get("/api/models")
