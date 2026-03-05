@@ -78,15 +78,18 @@ def engineer_features(df: pd.DataFrame) -> pd.DataFrame:
 def load_real_or_synthetic(sample_size: int) -> pd.DataFrame:
     """
     Priority:
-      1. Read CSVs from /data (mounted volume) — uses full sample_size
+      1. Read CSVs from /data (mounted volume) — reads only needed rows per file
       2. Synthetic data matching the exact sample_size requested
     """
     dfs = []
+    # Distribute the budget across files — read slightly more per file to handle row loss after dedup
+    per_file = (sample_size // len(CSV_FILES)) + 1000  # small buffer for dedup
+
     for fname in CSV_FILES:
         fp = DATA_DIR / fname
         if fp.exists():
             try:
-                df = pd.read_csv(fp, usecols=SELECTED_COLUMNS)
+                df = pd.read_csv(fp, usecols=SELECTED_COLUMNS, nrows=per_file)
                 dfs.append(df)
                 print(f"[optimizer] Loaded {fname}: {len(df):,} rows")
             except Exception as e:
@@ -183,8 +186,8 @@ def prepare_data(df: pd.DataFrame):
 
 
 # ─── Phase 2: Model Definitions ───────────────────────────────────────────────
-def get_model(name: str, params: dict = None):
-    """Return a single model with class imbalance handling."""
+def get_model(name: str, n_classes: int = 5, params: dict = None):
+    """Return a single model with class imbalance handling. n_classes drives XGBoost objective."""
     p = params or {}
     if name == 'Random Forest':
         return RandomForestClassifier(
@@ -199,10 +202,18 @@ def get_model(name: str, params: dict = None):
     if name == 'Gaussian NB':
         return GaussianNB()
     if name == 'XGBoost' and HAS_XGBOOST:
+        # Auto-select objective: binary for 2-class, softprob for 3+
+        if n_classes == 2:
+            obj, metric = 'binary:logistic', 'logloss'
+            extra = {'scale_pos_weight': 1}
+        else:
+            obj, metric = 'multi:softprob', 'mlogloss'
+            extra = {'num_class': n_classes}
         return XGBClassifier(
             n_estimators=p.get('n_estimators', 300), learning_rate=p.get('learning_rate', 0.05),
             max_depth=p.get('max_depth', 6), subsample=0.8, colsample_bytree=0.8,
-            eval_metric='mlogloss', random_state=RANDOM_STATE, n_jobs=-1
+            objective=obj, eval_metric=metric, random_state=RANDOM_STATE, n_jobs=-1,
+            **extra
         )
     if name == 'MLP':
         return MLPClassifier(
@@ -210,6 +221,7 @@ def get_model(name: str, params: dict = None):
             early_stopping=True, validation_fraction=0.1, random_state=RANDOM_STATE
         )
     raise ValueError(f"Unknown model: {name}")
+
 
 
 def fit_model(name: str, model, X_train, y_train, X_val, y_val):
@@ -321,7 +333,7 @@ def run_optimized_training(model_names: list, sample_size: int):
         try:
             print(f"[optimizer] Training {name} on {len(X_train):,} rows...")
             # Phase 2: Train with class weighting
-            model = get_model(name)
+            model = get_model(name, n_classes=n_classes)
             model, t_time = fit_model(name, model, X_train, y_train, X_val, y_val)
 
             # Phase 6: Evaluate (default thresholds first)
